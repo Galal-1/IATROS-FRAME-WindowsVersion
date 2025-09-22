@@ -15,6 +15,7 @@
       font-family: 'Open Sans', sans-serif;
       margin: 0;
       padding: 0;
+      width:100%;
     }
     header {
       background-color: #005C53;
@@ -50,17 +51,23 @@
       width: 100%;
       max-width: 400px;
     }
-    #canvas-container {
-      background-color: #fff;
-      border: 1px solid #ccc;
-      border-radius: 10px;
+
+    /* === Preview Wrapper Scaling === */
+    #preview-wrapper {
+      width: 100%;
+      max-width: 420px;      /* fits mobile nicely */
+      margin: 0 auto;
       overflow: hidden;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.15);
-      margin-top: 1rem;
+      position: relative;
+    }
+    #canvas-container {
+      transform-origin: 0 0; /* scale from top-left */
+      display: inline-block;
     }
     canvas {
       display: block;
     }
+
     .button {
       background-color: #005C53;
       color: white;
@@ -76,6 +83,7 @@
     }
     .button:hover {
       background-color: #DBF227;
+      color: #005C53;
     }
     .reset-button {
       font-size: 0.8rem;
@@ -101,9 +109,14 @@
     <div id="controls">
       <input type="file" id="upload" accept="image/*" />
     </div>
-    <div id="canvas-container">
-      <canvas id="canvas"></canvas>
+
+    <!-- Preview wrapper for scaling -->
+    <div id="preview-wrapper">
+      <div id="canvas-container">
+        <canvas id="canvas"></canvas>
+      </div>
     </div>
+
     <div id="controls">
       <button id="download" class="button">Download</button><br>
       <button id="reset" class="button reset-button">Reset</button>
@@ -111,25 +124,37 @@
     <div class="footer-text">Frame and Website designed by Galal Hasan Iatros team</div>
   </main>
 
-
   <script>
     const canvas = new fabric.Canvas('canvas', { preserveObjectStacking: true });
     const container = document.getElementById('canvas-container');
     let userImage = null;
     let frameImage = null;
 
+    // === Function to scale preview only (not real resolution) ===
+    function updatePreviewScale() {
+      const wrapper = document.getElementById('preview-wrapper');
+      const naturalW = canvas.getWidth();
+      const naturalH = canvas.getHeight();
+      if (!naturalW || !naturalH) return;
+
+      const wrapperW = wrapper.clientWidth;
+      const scale = wrapperW / naturalW;
+
+      container.style.transform = `scale(${scale})`;
+      container.style.width = naturalW + "px";
+      container.style.height = naturalH + "px";
+      wrapper.style.height = (naturalH * scale) + "px";
+    }
+
     // Load the frame and resize canvas to its size
-    fabric.Image.fromURL('IATROS FRAME 2.png', function (img) {
+    fabric.Image.fromURL('IATROS FRAME.png', function (img) {
       frameImage = img;
 
       const frameWidth = img.width;
       const frameHeight = img.height;
 
-      // Resize canvas + container
       canvas.setWidth(frameWidth);
       canvas.setHeight(frameHeight);
-      container.style.width = frameWidth + "px";
-      container.style.height = frameHeight + "px";
 
       img.set({
         selectable: false,
@@ -142,6 +167,9 @@
       canvas.add(img);
       canvas.sendToBack(img);
       canvas.renderAll();
+
+      // scale preview for the first time
+      updatePreviewScale();
     });
 
     // Upload user image
@@ -151,8 +179,7 @@
         fabric.Image.fromURL(f.target.result, function (img) {
           if (userImage) canvas.remove(userImage);
           userImage = img;
-
-          // Scale to fit canvas width (you can also add height scaling)
+        
           img.scaleToWidth(canvas.getWidth());
           if (img.getScaledHeight() > canvas.getHeight()) {
             img.scaleToHeight(canvas.getHeight());
@@ -217,6 +244,9 @@
         canvas.requestRenderAll();
       }
     });
+
+    // Recompute preview scale on resize
+    window.addEventListener("resize", updatePreviewScale);
   </script>
 </body>
 </html>
